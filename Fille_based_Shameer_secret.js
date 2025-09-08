@@ -1,81 +1,129 @@
-// lagrange.js
+import json
+from fractions import Fraction
 
-const fs = require("fs");
+def convert_value(base, value_str):
+    """
+    Converts a value from a given base to a decimal integer.
+    """
+    return int(value_str, int(base))
 
-/*
-=========================================================
-This program:
-1. Reads a JSON input (from file or stdin).
-2. Extracts n (total points) and k (minimum required).
-3. Converts given "value" from its "base" to decimal.
-4. Uses Lagrange interpolation to find the constant term
-   (coefficient of x^0 in the polynomial).
-=========================================================
-*/
+def lagrange_constant_term(points):
+    """
+    Calculates the constant term (f(0)) of a polynomial using Lagrange interpolation.
+    This function uses the fractions module to handle large numbers and
+    maintain precision throughout the calculation.
+    """
+    k = len(points)
+    constant = Fraction(0)
 
-// ---- Convert given value from base to decimal ----
-function convertValue(base, valueStr) {
-    return parseInt(valueStr, parseInt(base));
-}
+    for i in range(k):
+        xi = Fraction(points[i]['x'])
+        yi = Fraction(points[i]['y'])
 
-// ---- Lagrange Interpolation ----
-// Returns constant term (f(0))
-function lagrangeConstantTerm(points) {
-    const k = points.length;
-    let constant = 0;
+        li_at_0 = Fraction(1)  # L_i(0)
+        for j in range(k):
+            if j != i:
+                xj = Fraction(points[j]['x'])
+                li_at_0 *= (Fraction(0) - xj) / (xi - xj)
 
-    for (let i = 0; i < k; i++) {
-        let xi = points[i].x;
-        let yi = points[i].y;
+        constant += yi * li_at_0
+    
+    # The result should be an integer, so we convert the final Fraction.
+    return int(constant)
 
-        let liAt0 = 1; // L_i(0)
-        for (let j = 0; j < k; j++) {
-            if (j !== i) {
-                liAt0 *= (0 - points[j].x) / (xi - points[j].x);
-            }
+def main():
+    """
+    Main function to get JSON data, process it, and find the constant term.
+    """
+    # Hardcoded JSON data from the user's request
+    raw_data = """
+    {
+        "keys": {
+            "n": 10,
+            "k": 7
+        },
+        "1": {
+            "base": "6",
+            "value": "13444211440455345511"
+        },
+        "2": {
+            "base": "15",
+            "value": "aed7015a346d635"
+        },
+        "3": {
+            "base": "15",
+            "value": "6aeeb69631c227c"
+        },
+        "4": {
+            "base": "16",
+            "value": "e1b5e05623d881f"
+        },
+        "5": {
+            "base": "8",
+            "value": "316034514573652620673"
+        },
+        "6": {
+            "base": "3",
+            "value": "2122212201122002221120200210011020220200"
+        },
+        "7": {
+            "base": "3",
+            "value": "20120221122211000100210021102001201112121"
+        },
+        "8": {
+            "base": "6",
+            "value": "20220554335330240002224253"
+        },
+        "9": {
+            "base": "12",
+            "value": "45153788322a1255483"
+        },
+        "10": {
+            "base": "7",
+            "value": "1101613130313526312514143"
         }
-
-        constant += yi * liAt0;
     }
-    return constant;
-}
+    """
+    data = json.loads(raw_data)
 
-// ---- Main Execution ----
-function main() {
-    // If input.json exists, read from it; otherwise read stdin
-    let rawData = "";
-    try {
-        rawData = fs.readFileSync("input.json", "utf8");
-    } catch (e) {
-        // fallback: read from stdin
-        rawData = fs.readFileSync(0, "utf8");
-    }
+    try:
+        n = data['keys']['n']
+        k = data['keys']['k']
+    except KeyError:
+        print("Error: 'keys' or 'n' or 'k' not found in the JSON data.")
+        return
 
-    const data = JSON.parse(rawData);
+    points = []
+    
+    count = 0
+    for key in data:
+        if key == "keys":
+            continue
+        if count >= k:
+            break
+        
+        try:
+            base = data[key]['base']
+            value = data[key]['value']
 
-    const n = data.keys.n;
-    const k = data.keys.k;
+            x = int(key)  # the root index
+            y = convert_value(base, value)
 
-    let points = [];
+            points.append({'x': x, 'y': y})
+            count += 1
+        except KeyError as e:
+            print(f"Skipping entry for key '{key}'. Missing field: {e}")
+        except ValueError as e:
+            print(f"Skipping entry for key '{key}'. Data conversion error: {e}")
+    
+    if len(points) < k:
+        print(f"Warning: Only found {len(points)} valid points, but a minimum of {k} were required. Calculation may be inaccurate.")
+        if not points:
+            print("No valid points found to perform the calculation.")
+            return
 
-    // Use first 'k' valid points dynamically
-    let count = 0;
-    for (let key of Object.keys(data)) {
-        if (key === "keys") continue;
-        if (count >= k) break;
+    constant = lagrange_constant_term(points)
+    print("Constant term of polynomial:", constant)
 
-        const base = data[key].base;
-        const value = data[key].value;
-
-        const x = parseInt(key); // the root index
-        const y = convertValue(base, value);
-
-        points.push({ x, y });
-        count++;
-    }
-
-    const constant = lagrangeConstantTerm(points);
-    console.log("Constant term of polynomial:", constant);
-}
-
-main();
+if __name__ == "__main__":
+    main()
