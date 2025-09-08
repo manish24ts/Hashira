@@ -1,129 +1,107 @@
-import json
-from fractions import Fraction
+//Handles larger values better
 
-def convert_value(base, value_str):
-    """
-    Converts a value from a given base to a decimal integer.
-    """
-    return int(value_str, int(base))
+const fs = require("fs");
 
-def lagrange_constant_term(points):
-    """
-    Calculates the constant term (f(0)) of a polynomial using Lagrange interpolation.
-    This function uses the fractions module to handle large numbers and
-    maintain precision throughout the calculation.
-    """
-    k = len(points)
-    constant = Fraction(0)
+/*
+=========================================================
+This program:
+1. Reads a JSON input.
+2. Extracts n (total points) and k (minimum required).
+3. Converts the "value" from its "base" to a decimal
+   BigInt to handle arbitrary-precision integers.
+4. Uses Lagrange interpolation with BigInt arithmetic
+   to find the constant term (f(0)) of the polynomial.
+=========================================================
+*/
 
-    for i in range(k):
-        xi = Fraction(points[i]['x'])
-        yi = Fraction(points[i]['y'])
+// ---- Custom base-to-decimal converter for BigInts ----
+function convertValue(baseStr, valueStr) {
+    const base = BigInt(baseStr);
+    let decimalValue = 0n;
+    const power = BigInt(valueStr.length - 1);
 
-        li_at_0 = Fraction(1)  # L_i(0)
-        for j in range(k):
-            if j != i:
-                xj = Fraction(points[j]['x'])
-                li_at_0 *= (Fraction(0) - xj) / (xi - xj)
-
-        constant += yi * li_at_0
-    
-    # The result should be an integer, so we convert the final Fraction.
-    return int(constant)
-
-def main():
-    """
-    Main function to get JSON data, process it, and find the constant term.
-    """
-    # Hardcoded JSON data from the user's request
-    raw_data = """
-    {
-        "keys": {
-            "n": 10,
-            "k": 7
-        },
-        "1": {
-            "base": "6",
-            "value": "13444211440455345511"
-        },
-        "2": {
-            "base": "15",
-            "value": "aed7015a346d635"
-        },
-        "3": {
-            "base": "15",
-            "value": "6aeeb69631c227c"
-        },
-        "4": {
-            "base": "16",
-            "value": "e1b5e05623d881f"
-        },
-        "5": {
-            "base": "8",
-            "value": "316034514573652620673"
-        },
-        "6": {
-            "base": "3",
-            "value": "2122212201122002221120200210011020220200"
-        },
-        "7": {
-            "base": "3",
-            "value": "20120221122211000100210021102001201112121"
-        },
-        "8": {
-            "base": "6",
-            "value": "20220554335330240002224253"
-        },
-        "9": {
-            "base": "12",
-            "value": "45153788322a1255483"
-        },
-        "10": {
-            "base": "7",
-            "value": "1101613130313526312514143"
+    for (let i = 0; i < valueStr.length; i++) {
+        const char = valueStr[i];
+        let digit;
+        // Handle digits 0-9
+        if (/[0-9]/.test(char)) {
+            digit = BigInt(parseInt(char, 10));
+        } else {
+            // Handle letters 'a' through 'f' for bases > 10 (e.g., hex)
+            digit = BigInt(char.toLowerCase().charCodeAt(0) - 'a'.charCodeAt(0) + 10);
         }
+        decimalValue += digit * (base ** BigInt(valueStr.length - 1 - i));
     }
-    """
-    data = json.loads(raw_data)
+    return decimalValue;
+}
 
-    try:
-        n = data['keys']['n']
-        k = data['keys']['k']
-    except KeyError:
-        print("Error: 'keys' or 'n' or 'k' not found in the JSON data.")
-        return
+// ---- Lagrange Interpolation with BigInts ----
+// This function calculates f(0), the constant term.
+function lagrangeConstantTerm(points) {
+    const k = points.length;
+    let constant = 0n;
 
-    points = []
-    
-    count = 0
-    for key in data:
-        if key == "keys":
-            continue
-        if count >= k:
-            break
+    for (let i = 0; i < k; i++) {
+        const xi = BigInt(points[i].x);
+        const yi = points[i].y;
+
+        let liAt0Numerator = 1n;
+        let liAt0Denominator = 1n;
+
+        // Calculate the numerator and denominator of L_i(0)
+        for (let j = 0; j < k; j++) {
+            if (j !== i) {
+                const xj = BigInt(points[j].x);
+                liAt0Numerator *= (0n - xj);
+                liAt0Denominator *= (xi - xj);
+            }
+        }
         
-        try:
-            base = data[key]['base']
-            value = data[key]['value']
+        // Division must be performed on BigInts
+        // Note: BigInt division truncates towards zero. For this problem,
+        // the numerator is guaranteed to be divisible by the denominator.
+        const liAt0 = liAt0Numerator / liAt0Denominator;
+        constant += yi * liAt0;
+    }
+    return constant;
+}
 
-            x = int(key)  # the root index
-            y = convert_value(base, value)
+// ---- Main Execution ----
+function main() {
+    let rawData = "";
+    try {
+        rawData = fs.readFileSync("input.json", "utf8");
+    } catch (e) {
+        // Fallback to reading from stdin if 'input.json' doesn't exist
+        rawData = fs.readFileSync(0, "utf8");
+    }
 
-            points.append({'x': x, 'y': y})
-            count += 1
-        except KeyError as e:
-            print(f"Skipping entry for key '{key}'. Missing field: {e}")
-        except ValueError as e:
-            print(f"Skipping entry for key '{key}'. Data conversion error: {e}")
-    
-    if len(points) < k:
-        print(f"Warning: Only found {len(points)} valid points, but a minimum of {k} were required. Calculation may be inaccurate.")
-        if not points:
-            print("No valid points found to perform the calculation.")
-            return
+    const data = JSON.parse(rawData);
 
-    constant = lagrange_constant_term(points)
-    print("Constant term of polynomial:", constant)
+    const k = data.keys.k;
 
-if __name__ == "__main__":
-    main()
+    let points = [];
+
+    // Select the first 'k' points as required for Lagrange interpolation
+    let count = 0;
+    for (const key of Object.keys(data)) {
+        if (key === "keys") continue;
+        if (count >= k) break;
+
+        const base = data[key].base;
+        const value = data[key].value;
+
+        // The "key" is the index of the root (x-coordinate),
+        // and the converted value is the y-coordinate.
+        const x = parseInt(key, 10);
+        const y = convertValue(base, value);
+
+        points.push({ x, y });
+        count++;
+    }
+
+    const constant = lagrangeConstantTerm(points);
+    console.log(constant.toString());
+}
+
+main();
