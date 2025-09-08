@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Polynomial Visualizer</title>
+  <title>Hashira Polynomial Visualizer</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: #f4f6f9;
+      background: #f8f9fa;
       margin: 0;
       padding: 0;
       display: flex;
@@ -17,13 +17,22 @@
     }
     header {
       width: 100%;
-      padding: 20px;
-      background: linear-gradient(135deg, #3a8ef6, #6f3af6);
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #e31e24, #b71c1c);
       color: white;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(227, 30, 36, 0.3);
+    }
+    .logo {
+      height: 50px;
+      margin-right: 20px;
+    }
+    .header-text {
       font-size: 1.8em;
       font-weight: bold;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
     .container {
       background: white;
@@ -34,6 +43,7 @@
       width: 80%;
       max-width: 900px;
       text-align: center;
+      border-top: 4px solid #e31e24;
     }
     .input-section {
       margin-bottom: 30px;
@@ -44,14 +54,16 @@
       padding: 20px;
       border: 2px solid #e0e0e0;
       border-radius: 10px;
-      transition: border-color 0.3s;
+      transition: all 0.3s ease;
     }
     .input-method:hover {
-      border-color: #3a8ef6;
+      border-color: #e31e24;
+      box-shadow: 0 2px 8px rgba(227, 30, 36, 0.1);
     }
     .input-method.active {
-      border-color: #3a8ef6;
-      background: #f8fbff;
+      border-color: #e31e24;
+      background: linear-gradient(135deg, #fff5f5, #ffebee);
+      box-shadow: 0 4px 12px rgba(227, 30, 36, 0.15);
     }
     .method-title {
       font-size: 1.2em;
@@ -64,6 +76,7 @@
     .method-title input[type="radio"] {
       margin-right: 10px;
       transform: scale(1.2);
+      accent-color: #e31e24;
     }
     input[type="file"], input[type="url"], textarea {
       width: 100%;
@@ -72,6 +85,12 @@
       border-radius: 8px;
       font-size: 1em;
       box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+    input[type="file"]:focus, input[type="url"]:focus, textarea:focus {
+      border-color: #e31e24;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(227, 30, 36, 0.1);
     }
     input[type="url"] {
       margin-bottom: 10px;
@@ -84,23 +103,26 @@
     button {
       padding: 12px 24px;
       margin: 10px 5px;
-      background: linear-gradient(135deg, #3a8ef6, #6f3af6);
+      background: linear-gradient(135deg, #e31e24, #b71c1c);
       color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-size: 1em;
-      transition: 0.3s;
+      transition: all 0.3s ease;
       font-weight: bold;
+      box-shadow: 0 2px 4px rgba(227, 30, 36, 0.3);
     }
     button:hover {
-      background: linear-gradient(135deg, #2a6ed6, #5a2ad6);
+      background: linear-gradient(135deg, #d32f2f, #9a0007);
       transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(227, 30, 36, 0.4);
     }
     button:disabled {
       background: #ccc;
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
     }
     #constantDisplay {
       margin: 30px 0;
@@ -108,10 +130,10 @@
       font-size: 1.5em;
       font-weight: bold;
       color: #fff;
-      background: linear-gradient(135deg, #32cd32, #228b22);
+      background: linear-gradient(135deg, #e31e24, #b71c1c);
       border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(50, 205, 50, 0.3);
-      border: 3px solid #228b22;
+      box-shadow: 0 4px 15px rgba(227, 30, 36, 0.4);
+      border: 3px solid #b71c1c;
       text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
     #constantDisplay.hidden {
@@ -120,33 +142,59 @@
     canvas {
       margin-top: 20px;
       max-height: 500px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .loading {
       display: none;
-      color: #3a8ef6;
+      color: #e31e24;
       font-weight: bold;
       margin: 10px 0;
     }
     .error {
-      color: #f63a3a;
-      background: #ffe6e6;
+      color: #d32f2f;
+      background: #ffebee;
       padding: 10px;
       border-radius: 8px;
       margin: 10px 0;
       display: none;
+      border-left: 4px solid #e31e24;
     }
     .success {
-      color: #228b22;
-      background: #e6ffe6;
+      color: #2e7d32;
+      background: #e8f5e8;
       padding: 10px;
       border-radius: 8px;
       margin: 10px 0;
       display: none;
+      border-left: 4px solid #4caf50;
+    }
+    .hashira-accent {
+      color: #e31e24;
+      font-weight: bold;
+    }
+    .powered-by {
+      margin-top: 30px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      color: #666;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .powered-by img {
+      height: 25px;
+      margin-left: 10px;
     }
   </style>
 </head>
 <body>
-  <header>Polynomial Visualizer</header>
+  <header>
+    <img src="logo.png" alt="Hashira Logo" class="logo">
+    <div class="header-text">Polynomial Visualizer</div>
+  </header>
   <div class="container">
     <div class="input-section">
       <!-- File Upload Method -->
@@ -193,6 +241,11 @@
 
     <div id="constantDisplay" class="hidden"></div>
     <canvas id="polyChart"></canvas>
+
+    <div class="powered-by">
+      <span>Powered by</span>
+      <img src="logo.jpeg" alt="Hashira">
+    </div>
   </div>
 
   <script>
@@ -407,7 +460,7 @@
             {
               label: "Polynomial Curve",
               data: curveX.map((x, i) => ({ x, y: curveY[i] })),
-              borderColor: "#3a8ef6",
+              borderColor: "#e31e24",
               borderWidth: 3,
               fill: false,
               pointRadius: 0,
@@ -416,8 +469,8 @@
             {
               label: "Given Points",
               data: points,
-              backgroundColor: "#ff6666",
-              borderColor: "#ff3333",
+              backgroundColor: "#ff5722",
+              borderColor: "#e31e24",
               type: "scatter",
               pointRadius: 8,
               pointBorderWidth: 2
@@ -425,8 +478,8 @@
             {
               label: "Constant f(0)",
               data: [{ x: 0, y: constant }],
-              backgroundColor: "#32cd32",
-              borderColor: "#228b22",
+              backgroundColor: "#4caf50",
+              borderColor: "#2e7d32",
               type: "scatter",
               pointRadius: 12,
               pointBorderWidth: 3
@@ -456,7 +509,7 @@
                 font: { size: 16 }
               },
               grid: {
-                color: '#e0e0e0'
+                color: '#f0f0f0'
               }
             },
             y: { 
@@ -466,7 +519,7 @@
                 font: { size: 16 }
               },
               grid: {
-                color: '#e0e0e0'
+                color: '#f0f0f0'
               }
             }
           }
